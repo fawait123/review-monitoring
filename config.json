@@ -1,0 +1,5 @@
+{
+  "excludeArchived": true,
+  "collectLimitPerRepo": 100,
+  "refreshMinutes": 15
+}
