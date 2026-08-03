@@ -60,7 +60,7 @@ export default async function PrDetailPage({
         </Link>
         <div className="flex items-start justify-between gap-4 mt-2 flex-wrap">
           <div className="min-w-0">
-            <h1 className="text-xl font-bold tracking-tight break-words">
+            <h1 className="text-xl font-bold tracking-tight wrap-break-word">
               {pr.title}
               <span className="text-muted-foreground font-mono text-base"> #{pr.number}</span>
             </h1>

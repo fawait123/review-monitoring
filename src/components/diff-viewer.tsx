@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,13 @@ interface Props {
   openThread: { path: string; line: number } | null;
   onOpenThread: (v: { path: string; line: number } | null) => void;
   onAddComment: (path: string, line: number, body: string) => Promise<void>;
+  editingId: number | null;
+  editBody: string;
+  onEditBody: (body: string) => void;
+  onEdit: (c: ReviewComment) => void;
+  onSaveEdit: (c: ReviewComment) => void;
+  onCancelEdit: () => void;
+  onDelete: (id: number) => void;
 }
 
 interface Composer {
@@ -28,10 +35,35 @@ const LINE_COLORS: Record<string, string> = {
   context: "",
 };
 
-export function DiffViewer({ files, comments, reviewerName, openThread, onOpenThread, onAddComment }: Props) {
+export function DiffViewer({
+  files,
+  comments,
+  reviewerName,
+  openThread,
+  onOpenThread,
+  onAddComment,
+  editingId,
+  editBody,
+  onEditBody,
+  onEdit,
+  onSaveEdit,
+  onCancelEdit,
+  onDelete,
+}: Props) {
   const [composer, setComposer] = useState<Composer | null>(null);
   const [openFiles, setOpenFiles] = useState<Set<string>>(new Set(files.map((f) => f.path)));
   const [expandedBodies, setExpandedBodies] = useState<Set<number>>(new Set());
+  const editRef = useRef<HTMLTextAreaElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+
+  // Focus form tanpa auto-scroll-jump: scrollIntoView block:nearest = scroll minimal.
+  useEffect(() => {
+    const el = composer ? composerRef.current : editRef.current;
+    if (el) {
+      el.scrollIntoView({ block: "nearest" });
+      el.focus({ preventScroll: true });
+    }
+  }, [editingId, composer]);
 
   const commentsByLine = useMemo(() => {
     const map = new Map<string, ReviewComment[]>();
@@ -184,7 +216,7 @@ export function DiffViewer({ files, comments, reviewerName, openThread, onOpenTh
                                         >
                                           {c.status}
                                         </Badge>
-                                        {c.body.length > 120 && (
+                                        {editingId !== c.id && c.body.length > 120 && (
                                           <button
                                             className="ml-auto text-[11px] text-muted-foreground hover:text-foreground"
                                             onClick={() =>
@@ -200,13 +232,57 @@ export function DiffViewer({ files, comments, reviewerName, openThread, onOpenTh
                                           </button>
                                         )}
                                       </div>
-                                      <p
-                                        className={`text-sm whitespace-pre-wrap break-words ${
-                                          expandedBodies.has(c.id) ? "" : "line-clamp-3"
-                                        }`}
-                                      >
-                                        {c.body}
-                                      </p>
+                                      {editingId === c.id ? (
+                                        <div className="space-y-2">
+                                          <Textarea
+                                            ref={editRef}
+                                            value={editBody}
+                                            onChange={(e) => onEditBody(e.target.value)}
+                                            rows={3}
+                                            className="font-sans text-sm"
+                                          />
+                                          <div className="flex justify-end gap-2">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={onCancelEdit}
+                                            >
+                                              Batal
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              onClick={() => onSaveEdit(c)}
+                                              disabled={!editBody.trim()}
+                                            >
+                                              Simpan
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <>
+                                          <p
+                                            className={`text-sm whitespace-pre-wrap break-words ${
+                                              expandedBodies.has(c.id) ? "" : "line-clamp-3"
+                                            }`}
+                                          >
+                                            {c.body}
+                                          </p>
+                                          <div className="flex justify-end gap-1">
+                                            <button
+                                              className="text-[11px] text-muted-foreground hover:text-foreground px-1"
+                                              onClick={() => onEdit(c)}
+                                            >
+                                              ✏️ Edit
+                                            </button>
+                                            <button
+                                              className="text-[11px] text-red-400/80 hover:text-red-400 px-1"
+                                              onClick={() => onDelete(c.id)}
+                                            >
+                                              🗑 Hapus
+                                            </button>
+                                          </div>
+                                        </>
+                                      )}
                                     </div>
                                   ))}
                                 </div>
@@ -223,12 +299,12 @@ export function DiffViewer({ files, comments, reviewerName, openThread, onOpenTh
                             Komentar @ {composer.file.path}:{composer.line}
                           </div>
                           <Textarea
+                            ref={composerRef}
                             value={composer.body}
                             onChange={(e) => setComposer({ ...composer, body: e.target.value })}
                             rows={3}
                             placeholder="Tulis komentar review…"
                             className="font-sans text-sm"
-                            autoFocus
                           />
                           <div className="flex justify-end gap-2 mt-2">
                             <Button variant="ghost" size="sm" onClick={() => setComposer(null)}>

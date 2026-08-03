@@ -234,6 +234,16 @@ export function ReviewWorkspace({ pr, files, reviews, commentsByReview, reviewer
           openThread={openThread}
           onOpenThread={setOpenThread}
           onAddComment={addComment}
+          editingId={editingId}
+          editBody={editBody}
+          onEditBody={setEditBody}
+          onEdit={(c) => {
+            setEditingId(c.id);
+            setEditBody(c.body);
+          }}
+          onSaveEdit={saveEdit}
+          onCancelEdit={() => setEditingId(null)}
+          onDelete={removeComment}
         />
       </div>
 
