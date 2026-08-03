@@ -290,7 +290,7 @@ export function ReviewWorkspace({ pr, files, reviews, commentsByReview, reviewer
         )}
 
         {mode === "editing" && (
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[calc(100vh-4rem)] overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="rounded-lg border p-4 space-y-3">
               <h3 className="font-semibold text-sm">Summary review</h3>
               <Textarea
