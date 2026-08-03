@@ -20,6 +20,8 @@ export interface PRRow {
   merged_at: string | null;
   closed_at: string | null;
   repo?: string;
+  submitted?: number;
+  draft?: number;
 }
 
 const upsertStmt = db.prepare(`
@@ -40,11 +42,24 @@ const upsertStmt = db.prepare(`
 `);
 
 const listStmt = db.prepare(`
-  SELECT p.*, r.name_with_owner AS repo FROM prs p
+  SELECT 
+    p.*, 
+    r.name_with_owner AS repo,
+    (select count(rv.id) from reviews rv where rv.pr_id = p.id and rv.status = 'submitted') as submitted,
+    (select count(rv.id) from reviews rv where rv.pr_id = p.id and rv.status = 'draft') as draft
+  FROM prs p
   JOIN repos r ON r.id = p.repo_id
   WHERE (? IS NULL OR r.name_with_owner = ?)
     AND (? IS NULL OR p.state = ?)
   ORDER BY p.updated_at DESC
+  LIMIT ? OFFSET ?
+`);
+
+const countStmt = db.prepare(`
+  SELECT COUNT(*) AS total FROM prs p
+  JOIN repos r ON r.id = p.repo_id
+  WHERE (? IS NULL OR r.name_with_owner = ?)
+    AND (? IS NULL OR p.state = ?)
 `);
 
 const byIdStmt = db.prepare(`
@@ -78,6 +93,9 @@ function toPR(row: PRRow): PR {
     mergedAt: row.merged_at,
     closedAt: row.closed_at,
     repo: row.repo,
+    submitted: row.submitted && row.submitted > 0 ? true : false,
+    draft: row.draft && row.draft > 0 ? true : false,
+    decision: row.submitted && row.submitted > 0 ? "SUBMITTED" : row.draft && row.draft > 0 ? "DRAFT" : null,
   };
 }
 
@@ -102,8 +120,23 @@ export function upsertPR(input: { repo_id: number } & CollectedPR): void {
   });
 }
 
-export function listPRs(repo?: string, state?: string): PR[] {
-  return (listStmt.all(repo ?? null, repo ?? null, state ?? null, state ?? null) as PRRow[]).map(toPR);
+export function listPRs(repo?: string, state?: string, limit?: number, offset?: number): PR[] {
+  const lim = limit ?? 1000;
+  const off = offset ?? 0;
+  return (listStmt.all(repo ?? null, repo ?? null, state ?? null, state ?? null, lim, off) as PRRow[]).map(toPR);
+}
+
+export function countPRs(repo?: string, state?: string): number {
+  const row = countStmt.get(repo ?? null, repo ?? null, state ?? null, state ?? null) as { total: number };
+  return row.total;
+}
+
+const updateStateStmt = db.prepare(`UPDATE prs SET state = ? WHERE id = ?`);
+
+// Override state manual dari dashboard (tanpa sync GitHub).
+// ponytail: cukup state saja; collect berikutnya tetap menimpa dari GitHub.
+export function updatePRState(id: number, state: PR["state"]): void {
+  updateStateStmt.run(state, id);
 }
 
 export function getPR(id: number): PR | null {

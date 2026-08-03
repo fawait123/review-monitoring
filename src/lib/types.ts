@@ -4,8 +4,8 @@ export type CommentStatus = "draft" | "submitted";
 
 export interface Repo {
   id: number;
-  nameWithOwner: string;
-  discoveredAt: string;
+  name_with_owner: string;
+  discovered_at: string;
 }
 
 export interface PR {
@@ -27,6 +27,9 @@ export interface PR {
   mergedAt: string | null;
   closedAt: string | null;
   repo?: string;
+  submitted: boolean;
+  draft: boolean;
+  decision: "SUBMITTED" | "DRAFT" | null;
 }
 
 export interface Review {

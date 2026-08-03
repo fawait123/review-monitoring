@@ -121,7 +121,7 @@ export function ReviewThread({
                             <span className="w-10 px-2 text-right select-none text-muted-foreground/50 shrink-0 border-r border-border/50 py-0.5">
                               {l.newLine ?? c.line}
                             </span>
-                            <span className="whitespace-pre-wrap break-words flex-1 px-2 py-0.5">{l.content || " "}</span>
+                            <span className="whitespace-pre-wrap wrap-break-word flex-1 px-2 py-0.5">{l.content || " "}</span>
                           </div>
                         )}
                         <div className="rounded-md border">
@@ -146,7 +146,7 @@ export function ReviewThread({
                           ) : (
                             <>
                               <p
-                                className={`text-sm whitespace-pre-wrap break-words px-3 py-2.5 ${expanded.has(c.id) ? "" : "line-clamp-3"
+                                className={`text-sm whitespace-pre-wrap wrap-break-word px-3 py-2.5 ${expanded.has(c.id) ? "" : "line-clamp-3"
                                   }`}
                               >
                                 {c.body}

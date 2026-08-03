@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ export function ReviewWorkspace({ pr, files, reviews, commentsByReview, reviewer
   const draft = reviews.find((r) => r.status === "draft");
   const submitted = reviews.filter((r) => r.status === "submitted");
 
-  const [mode, setMode] = useState<Mode>(draft ? "editing" : submitted.length ? "submitted" : "idle");
+  const [mode, setMode] = useState<Mode>(submitted.length > 0 ? "submitted" : draft ? "editing" : "idle");
   const [activeReviewId, setActiveReviewId] = useState<number | null>(draft?.id ?? null);
   const [summary, setSummary] = useState<string>(draft?.summary ?? submitted[0]?.summary ?? "");
   const [comments, setComments] = useState<ReviewComment[]>(
@@ -41,12 +41,6 @@ export function ReviewWorkspace({ pr, files, reviews, commentsByReview, reviewer
   const [openThread, setOpenThread] = useState<{ path: string; line: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
-
-  const commentsByFile = useMemo(() => {
-    const map = new Map<string, ReviewComment[]>();
-    for (const c of comments) map.set(c.path, [...(map.get(c.path) ?? []), c]);
-    return map;
-  }, [comments]);
 
   const pushLog = (line: LogLine) => setLog((l) => [...l, line]);
 
@@ -228,6 +222,7 @@ export function ReviewWorkspace({ pr, files, reviews, commentsByReview, reviewer
     <div className="grid lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
       <div className="min-w-0">
         <DiffViewer
+          submitted={submitted.length > 0}
           files={files}
           comments={comments}
           reviewerName={reviewerName}

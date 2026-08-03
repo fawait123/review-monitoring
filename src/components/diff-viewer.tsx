@@ -20,6 +20,7 @@ interface Props {
   onSaveEdit: (c: ReviewComment) => void;
   onCancelEdit: () => void;
   onDelete: (id: number) => void;
+  submitted: boolean;
 }
 
 interface Composer {
@@ -49,6 +50,7 @@ export function DiffViewer({
   onSaveEdit,
   onCancelEdit,
   onDelete,
+  submitted
 }: Props) {
   const [composer, setComposer] = useState<Composer | null>(null);
   const [openFiles, setOpenFiles] = useState<Set<string>>(new Set(files.map((f) => f.path)));
@@ -158,7 +160,7 @@ export function DiffViewer({
                             >
                               +
                             </button>
-                            <span className="whitespace-pre-wrap break-words flex-1">{line.content || " "}</span>
+                            <span className="whitespace-pre-wrap wrap-break-word flex-1">{line.content || " "}</span>
                             {cs && cs.length > 0 && (
                               <button
                                 className="shrink-0 mr-2 self-center"
@@ -234,14 +236,14 @@ export function DiffViewer({
                                       </div>
                                       {editingId === c.id ? (
                                         <div className="space-y-2">
-                                          <Textarea
+                                          {submitted ? <div className="text-justify">{editBody}</div> : <Textarea
                                             ref={editRef}
                                             value={editBody}
                                             onChange={(e) => onEditBody(e.target.value)}
                                             rows={3}
                                             className="font-sans text-sm"
-                                          />
-                                          <div className="flex justify-end gap-2">
+                                          />}
+                                          {!submitted && <div className="flex justify-end gap-2">
                                             <Button
                                               variant="ghost"
                                               size="sm"
@@ -256,18 +258,17 @@ export function DiffViewer({
                                             >
                                               Simpan
                                             </Button>
-                                          </div>
+                                          </div>}
                                         </div>
                                       ) : (
                                         <>
                                           <p
-                                            className={`text-sm whitespace-pre-wrap break-words ${
-                                              expandedBodies.has(c.id) ? "" : "line-clamp-3"
-                                            }`}
+                                            className={`text-sm whitespace-pre-wrap wrap-break-word ${expandedBodies.has(c.id) ? "" : "line-clamp-3"
+                                              }`}
                                           >
                                             {c.body}
                                           </p>
-                                          <div className="flex justify-end gap-1">
+                                          {!submitted && <div className="flex justify-end gap-1">
                                             <button
                                               className="text-[11px] text-muted-foreground hover:text-foreground px-1"
                                               onClick={() => onEdit(c)}
@@ -280,7 +281,7 @@ export function DiffViewer({
                                             >
                                               🗑 Hapus
                                             </button>
-                                          </div>
+                                          </div>}
                                         </>
                                       )}
                                     </div>
